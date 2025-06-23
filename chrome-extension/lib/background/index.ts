@@ -24,8 +24,22 @@ const init = async () => {
   }
 };
 
-chrome.runtime.onInstalled.addListener(async () => {
-  init();
+// Call init on extension startup (browser launch or extension enabled)
+chrome.runtime.onStartup.addListener(async () => {
+  console.log("onStartup event triggered");
+  await init();
+});
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  // Perform install/update specific tasks
+  if (details.reason === "install") {
+    console.log("Extension installed");
+    // You could put first-time setup logic here if needed
+  } else if (details.reason === "update") {
+    console.log("Extension updated");
+  }
+
+  // Initialize context menus, etc. This is fine to run on install/update.
   // chrome.sidePanel.setPanexlBehavior({ openPanelOnActionClick: false });
   chrome.contextMenus.create({
     id: 'openSidePanel',
@@ -39,6 +53,11 @@ chrome.runtime.onInstalled.addListener(async () => {
       chrome.sidePanel.open({ windowId: tab.windowId });
     }
   });
+
+  // Also run init() on installation, especially for the first install
+  // before the browser has been restarted.
+  // If onStartup also ran, init() should be idempotent enough.
+  await init();
 });
 
 let delayTimer: NodeJS.Timeout | null = null;
