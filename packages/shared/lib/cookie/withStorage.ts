@@ -22,7 +22,16 @@ export const readCookiesMapWithStatus = async (cloudflareInfo: AccountInfo) => {
   if (cookieMap && Object.keys(cookieMap.domainCookieMap || {}).length > 0) {
     return cookieMap;
   }
-  return await readCookiesMap(cloudflareInfo);
+  try {
+    return await readCookiesMap(cloudflareInfo);
+  } catch (error: any) {
+    // Assuming a 404 or similar error means no cookies found.
+    // It might be better to check error.status === 404 if the error object has it.
+    // For now, any error reading from cloudflare is treated as "no existing cookies".
+    console.warn('Failed to read cookies from Cloudflare, assuming empty.', error);
+    // Return a structure that represents empty cookies.
+    return { domainCookieMap: {} } as Cookie;
+  }
 };
 
 export const pullCookies = async (isInit = false): Promise<Cookie> => {
